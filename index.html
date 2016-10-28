@@ -1,12 +1,13 @@
 <!DOCTYPE HTML>
 <html lang="en">
   <head>
-    <title>WebGL Globe</title>
+    <title>Facebook Connections WebGL Globe</title>
     <meta charset="utf-8">
     <style type="text/css">
       html {
         height: 100%;
       }
+
       body {
         margin: 0;
         padding: 0;
@@ -46,6 +47,7 @@
         color: #aaa;
         text-decoration: none;
       }
+
       a:hover {
         text-decoration: underline;
       }
@@ -58,16 +60,16 @@
       #title {
         position: absolute;
         top: 20px;
-        width: 270px;
+        width: 365px;
         left: 20px;
         background-color: rgba(0,0,0,0.2);
         border-radius: 3px;
-        font: 20px Georgia;
+        font: 20px Verdana;
         padding: 10px;
       }
 
       .year {
-        font: 16px Georgia;
+        font: 16px Verdana;
         line-height: 26px;
         height: 30px;
         text-align: center;
@@ -84,21 +86,12 @@
         color: #fff;
       }
 
-      #ce span {
-        display: none;
+      .fb-login-button {
+      	position: fixed;
+      	bottom: 0px;
+      	left: 0px;
+      	padding: 10px;
       }
-
-      #ce {
-        width: 107px;
-        height: 55px;
-        display: block;
-        position: absolute;
-        bottom: 15px;
-        left: 20px;
-        background: url(/img/ce.png);
-      }
-
-
     </style>
   </head>
   <body>
@@ -106,7 +99,14 @@
   <div id="container"></div>
 
   <div id="info">
-    <strong><a href="http://www.chromeexperiments.com/globe">WebGL Globe</a></strong> <span class="bull">&bull;</span> Created by the Google Data Arts Team <span class="bull">&bull;</span> Data acquired from <a href="http://sedac.ciesin.columbia.edu/gpw/">SEDAC</a>
+    <strong>Created by <a href="http://matthewmuccio.com" target="_blank">Matthew Muccio</a> <span class="bull">&bull;</span> 
+    Source code on <a href="https://github.com/matthewmuccio/WebGLGlobe" target="_blank">GitHub</a> 
+    <span class="bull">&bull;</span> 
+    Powered by <a href="http://www.chromeexperiments.com/globe" target="_blank">WebGL Globe</a> 
+    <span class="bull">&bull;</span> 
+    Data from <a href="https://developers.facebook.com/docs/web" target="_blank">Facebook Web SDK</a>
+    <span class="bull">&bull;</span> 
+    WebGL Globe by the Google Data Arts Team</strong>
   </div>
 
   <div id="currentInfo">
@@ -116,12 +116,8 @@
   </div>
 
   <div id="title">
-    World Population
+    Your Connections Around the World
   </div>
-
-  <a id="ce" href="http://www.chromeexperiments.com/globe">
-    <span>This is a Chrome Experiment</span>
-  </a>
 
   <script type="text/javascript" src="lib/Detector.js"></script>
   <script type="text/javascript" src="lib/three.min.js"></script>
@@ -129,62 +125,123 @@
   <script type="text/javascript" src="globe.js"></script>
   <script type="text/javascript">
 
-    if(!Detector.webgl){
-      Detector.addGetWebGLMessage();
-    } else {
+  	// Facebook login script
+  	window.fbAsyncInit = function()
+  	{
+  		FB.init({
+  			appId      : '798916460211000',
+  			xfbml      : true,
+  			version    : 'v2.8'
+  		});
+  	};
 
+  	(function(d, s, id)
+  	{
+  		var js, fjs = d.getElementsByTagName(s)[0];
+
+  		if (d.getElementById(id))
+  		{
+  			return;
+  		}
+
+  		js = d.createElement(s); js.id = id;
+  		js.src = "//connect.facebook.net/en_US/sdk.js";
+  		fjs.parentNode.insertBefore(js, fjs);
+  	} (document, 'script', 'facebook-jssdk'));
+  	// End FB login
+
+  	// If WebGL is not detected on the browser.
+    if(!Detector.webgl)
+    {
+	  Detector.addGetWebGLMessage();
+    }
+    else
+    {
+   	  // Array which stores the available years.
       var years = ['1990','1995','2000'];
+
+      // Where to put the WebGL globe.
       var container = document.getElementById('container');
+      // Make the globe; store it in a variable.
       var globe = new DAT.Globe(container);
 
-      console.log(globe);
+      //console.log(globe);
       var i, tweens = [];
       
-      var settime = function(globe, t) {
-        return function() {
-          new TWEEN.Tween(globe).to({time: t/years.length},500).easing(TWEEN.Easing.Cubic.EaseOut).start();
-          var y = document.getElementById('year'+years[t]);
-          if (y.getAttribute('class') === 'year active') {
+      // What happens when the user selects a new time.
+      var settime = function(globe, t)
+      {
+        return function()
+        {
+          new TWEEN.Tween(globe).to({time: t/years.length}, 500).easing(TWEEN.Easing.Cubic.EaseOut).start();
+
+          var y = document.getElementById('year' + years[t]);
+
+          if (y.getAttribute('class') === 'year active')
+          {
             return;
           }
+
           var yy = document.getElementsByClassName('year');
-          for(i=0; i<yy.length; i++) {
+
+          for(i = 0; i < yy.length; i++)
+          {
             yy[i].setAttribute('class','year');
           }
+
           y.setAttribute('class', 'year active');
         };
       };
       
-      for(var i = 0; i<years.length; i++) {
-        var y = document.getElementById('year'+years[i]);
+      for(var i = 0; i < years.length; i++)
+      {
+        var y = document.getElementById('year' + years[i]);
         y.addEventListener('mouseover', settime(globe,i), false);
       }
       
       var xhr;
       TWEEN.start();
       
-      
+      // Asking a file for the JSON data.
       xhr = new XMLHttpRequest();
+      // Opening the file which holds the JSON data.
       xhr.open('GET', 'population909500.json', true);
-      xhr.onreadystatechange = function(e) {
-        if (xhr.readyState === 4) {
-          if (xhr.status === 200) {
+
+      // What happens when we receive the data.
+      xhr.onreadystatechange = function(e)
+      {
+      	// If data is received.
+        if (xhr.readyState === 4)
+        {
+          if (xhr.status === 200)
+          {
+          	// Parse the JSON data.
             var data = JSON.parse(xhr.responseText);
             window.data = data;
-            for (i=0;i<data.length;i++) {
+
+            // Tell the WebGL globe about your JSON data.
+            for (i = 0; i < data.length; i++)
+            {
               globe.addData(data[i][1], {format: 'magnitude', name: data[i][0], animated: true});
             }
+            // Create the geometry.
             globe.createPoints();
             settime(globe,0)();
+
+            // Begin animation.
             globe.animate();
             document.body.style.backgroundImage = 'none'; // remove loading
           }
         }
       };
+      // Begin request.
       xhr.send(null);
     }
 
   </script>
+
+  <!-- Add Facebook login button -->
+  <div class="fb-login-button" data-max-rows="1" data-size="xlarge" data-show-faces="false" data-auto-logout-link="true"></div>
 
   </body>
 
